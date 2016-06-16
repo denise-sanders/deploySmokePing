@@ -1,0 +1,41 @@
+---
+- hosts: all
+
+  tasks:
+    - name: Make sure apt-get is up to date
+      apt: update_cache=yes
+    - name: Upgrade Packages
+      apt: upgrade=dist
+    - name: restart machine
+      shell: sleep 2 && shutdown -r now "Ansible updates triggered"
+      async: 1
+      poll: 0
+      sudo: true
+      ignore_errors: true
+    - name: waiting for server to come back
+      local_action:
+        module: wait_for
+          host={{ inventory_hostname }}
+          port=22
+          state=started
+          delay=30
+          timeout=300
+      sudo: false
+    - name: Disallow password authentication
+      lineinfile: dest=/etc/ssh/sshd_config regexp="^PasswordAuthentication" l$
+      notify: Restart ssh
+    - name: install packages
+      apt: name=vim state=present
+      apt: name=tmux state=present
+      apt: name=htop state=present
+      apt: name=rrdtool state=present
+      apt: name=fping state=present
+      apt: name=echoping state=present
+      apt: name=dnsutils state=present
+      apt: name=nginx state=present
+      apt: name=dnsutils state=present
+
+  handlers:
+    - name: Restart ssh
+      service: name=ssh state=restarted
+
