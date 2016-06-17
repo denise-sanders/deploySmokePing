@@ -1,28 +1,45 @@
 ---
-- hosts: slaves
-  vars:
-      smokeping_file: /etc/default/smokeping
-      SLAVE_NAME: slave2.smokeping.hkg
-      MASTER_URL: http://master1.iad.smokeping.symetric.online/cgi-ibin/smokeping.cgi
+- hosts: all
+
   tasks:
-    - name: install smokeping
-      apt: name=smokeping state=present
-    
-    - name: uncomment lines in smokeping file
-      replace: dest={{smokeping_file}} regexp='# MASTER_URL' replace='MASTER_URL' backup=yes
-    - name: uncomment lines in smokeping file
-      replace: dest={{smokeping_file}} regexp='# SHARED_SECRET' replace='SHARED_SECRET' backup=yes
-    - name: uncomment lines in smokeping file
-      replace: dest={{smokeping_file}} regexp='# SLAVE_NAME' replace='SLAVE_NAME' backup=yes
-    - name: uncomment lines in smokeping file
-      replace: dest={{smokeping_file}} regexp='MODE=master' replace='MODE=slave' backup=yes
-    - name: set slave mode in smokeping file
-      lineinfile: dest={{smokeping_file}} line='MODE=slave' state=present
-    - name: set MASTER_URL in the smoke
-      lineinfile: dest={{smokeping_file}} regexp='MASTER_URL' line='MASTER_URL={{MASTER_URL}}' state=present
-    - lineinfile: dest={{smokeping_file}} regexp='SLAVE_NAME' line='SLAVE_NAME={{SLAVE_NAME}}' state=present
-    - file: path='/etc/smokeping/slavesecrets.conf' state=touch
-    - lineinfile: dest=/etc/smokeping/slavesecrets.conf line="snekysnek"
-    - file: path='/etc/smokeping/slavesecrets.conf' state=touch mode=0400 owner=smokeping group=root
-    - name: restart the slave
-      command: /etc/init.d/smokeping restart
+    - name: Make sure apt-get is up to date
+      apt: update_cache=yes
+    - name: Upgrade Packages
+      apt: upgrade=dist
+    - name: restart machine
+      shell: sleep 2 && shutdown -r now "Ansible updates triggered"
+      async: 1
+      poll: 0
+      sudo: true
+      ignore_errors: true
+    - name: waiting for server to come back
+      local_action:
+        module: wait_for
+          host={{ inventory_hostname }}
+          port=22
+          state=started
+          delay=30
+          timeout=300
+      sudo: false
+    - name: Disallow password authentication
+      lineinfile: dest=/etc/ssh/sshd_config regexp="^PasswordAuthentication" line="PasswordAuthentication no" state=present
+      notify: Restart ssh
+    - apt: name=vim state=present
+    - apt: name=tmux state=present
+    - apt: name=htop state=present
+    - apt: name=ntp state=present
+    - apt: name=ntpdate state=present
+    - name: Configure ntp
+      copy: src=ntp.conf dest=/etc/ntp.conf
+            owner=root group=root mode=0644
+      notify: Restart ntp
+    - name: Fix time before we start ntp service
+      command: ntpdate -u pool.ntp.org
+      changed_when: False
+    - name: Enable ntp service
+      service: name=ntp enabled=yes
+  handlers:
+    - name: Restart ssh
+      service: name=ssh state=restarted
+    - name: Restart ntp
+      service: name=ntp state=restarted
