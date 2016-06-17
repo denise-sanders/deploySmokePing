@@ -1,6 +1,0 @@
----
-- hosts: localhost
-  connection: local
-  tasks:
-    - name: Upgrade Packages
-      apt: upgrade=dist
