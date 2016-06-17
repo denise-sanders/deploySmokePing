@@ -1,5 +1,5 @@
 ---
-- hosts: all
+- hosts: all 
 
   tasks:
     - name: Make sure apt-get is up to date
@@ -13,29 +13,34 @@
       sudo: true
       ignore_errors: true
     - name: waiting for server to come back
-      local_action:
-        module: wait_for
-          host={{ inventory_hostname }}
+      local_action: 
+        module: wait_for 
+          host={{ inventory_hostname }} 
           port=22
-          state=started
-          delay=30
+          state=started 
+          delay=30 
           timeout=300
       sudo: false
     - name: Disallow password authentication
-      lineinfile: dest=/etc/ssh/sshd_config regexp="^PasswordAuthentication" l$
+      lineinfile: dest=/etc/ssh/sshd_config regexp="^PasswordAuthentication" line="PasswordAuthentication no" state=present
       notify: Restart ssh
     - name: install packages
       apt: name=vim state=present
       apt: name=tmux state=present
       apt: name=htop state=present
-      apt: name=rrdtool state=present
-      apt: name=fping state=present
-      apt: name=echoping state=present
-      apt: name=dnsutils state=present
-      apt: name=nginx state=present
-      apt: name=dnsutils state=present
-
+      apt: name=ntp state=present
+      apt: name=ntpdate state=present
+    - name: Configure ntp
+      copy: src=ntp.conf dest=/etc/ntp.conf
+            owner=root group=root mode=0644
+      notify: Restart ntp 
+    - name: Fix time before we start ntp service
+      command: ntpdate -u pool.ntp.org
+      changed_when: False
+    - name: Enable ntp service
+      service: name=ntp enabled=yes
   handlers:
     - name: Restart ssh
       service: name=ssh state=restarted
-
+    - name: Restart ntp
+      service: name=ntp state=restarted
