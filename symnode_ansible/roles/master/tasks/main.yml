@@ -10,6 +10,7 @@
 
   tasks:
     - apt: name=smokeping state=present
+    - apt: name=sendmail state=present
     - name: Fix broken link for apache
       file: state=link src=/etc/smokeping/apache2.conf dest=/etc/apache2/conf-available/smokeping.conf
       # command: sudo ln -s /etc/smokeping/apache2.conf /etc/apache2/conf-available/smokeping.conf
@@ -21,13 +22,27 @@
     - lineinfile: dest=/etc/smokeping/master_secrets line="{{ item }}:{{SECRET}}"
       with_items: SLAVES
     - file: dest=/etc/smokeping/master_secrets state=touch mode=0640 owner=www-data group=root
-    - lineinfile: dest=/etc/smokeping/config.d/Slaves line="secrets=/etc/smokeping/master_secrets"
+    - lineinfile: dest=/etc/smokeping/config.d/Slaves regexp="secrets=" line="secrets=/etc/smokeping/master_secrets"
+    - name: Check if slaves have already been added to config.d/Slaves
+      command: grep "display_name" /etc/smokeping/config.d/Slaves
+      register: slavecheck
+      always_run: True
+      changed_when: False
+      ignore_errors: True
     - name: Add slave information in config.d/Slaves
       lineinfile: dest=/etc/smokeping/config.d/Slaves line="+{{ item }}\ndisplay_name={{ item }} \ncolor=ff0000\n"
       with_items: SLAVES
+      when: slavecheck.rc == 1
+    - name: Check if slaves have already been added to /Targets
+      command: grep "menu =" /etc/smokeping/config.d/Targets
+      register: targetcheck
+      always_run: True
+      changed_when: False
+      ignore_errors: True
     - name: list slaves at top
       lineinfile: dest=/etc/smokeping/config.d/Targets line="slaves = {{ SLAVES | join(' ')}}"
     - name: Add slaves to targets
       lineinfile: dest=/etc/smokeping/config.d/Targets line="++ {{ item }}\nmenu = {{item}} \ntitle = {{item}} \nhost = {{item}}\n"
       with_items: SLAVES
+      when: targetcheck.rc == 1
     - service: name=smokeping state=restarted
