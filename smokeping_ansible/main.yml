@@ -1,0 +1,6 @@
+- hosts: slaves 
+  gather_facts: false
+  roles:
+    - common
+    - slave
+

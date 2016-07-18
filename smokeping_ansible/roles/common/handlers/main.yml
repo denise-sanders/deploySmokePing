@@ -1,0 +1,5 @@
+---
+- name: Restart ssh
+  service: name=ssh state=restarted
+- name: Restart ntp
+  service: name=ntp state=restarted
