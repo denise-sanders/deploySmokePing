@@ -1,3 +1,4 @@
-smokeping_file: /etc/default/smokeping
+smokeping_file: /etc/init.d/smokeping
+#smokeping_file: /etc/default/smokeping
 SLAVE_NAME: slave1.smokeping.syd
 MASTER_URL: http://master1.iad.smokeping.symetric.online/cgi-ibin/smokeping.cgi
