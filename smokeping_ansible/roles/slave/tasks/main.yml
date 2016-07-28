@@ -1,6 +1,11 @@
 ---
 - name: install smokeping
   apt: name=smokeping state=present
+- name: install sendmail
+  apt: name=sendmail state=present
+- name: get smoekping init configured well
+  copy: src=default dest=/etc/init.d/smokeping mode=0755 
+
 - name: uncomment lines in smokeping file
   replace: dest={{smokeping_file}} regexp='# MASTER_URL' replace='MASTER_URL' backup=yes
 - replace: dest={{smokeping_file}} regexp='# SHARED_SECRET' replace='SHARED_SECRET' backup=yes
@@ -11,7 +16,22 @@
 - lineinfile: dest={{smokeping_file}} regexp='MASTER_URL' line='MASTER_URL={{MASTER_URL}}' state=present
 - lineinfile: dest={{smokeping_file}} regexp='SLAVE_NAME' line='SLAVE_NAME={{SLAVE_NAME}}' state=present
 - file: path='/etc/smokeping/slavesecrets.conf' state=touch
-- lineinfile: dest=/etc/smokeping/slavesecrets.conf line="snekysnek"
+- lineinfile: dest=/etc/smokeping/slavesecrets.conf line="sekritsn3k"
 - file: path='/etc/smokeping/slavesecrets.conf' state=touch mode=0400 owner=smokeping group=root
+- name: restart machine
+  shell: sleep 2 && shutdown -r now "Ansible updates triggered"
+  async: 1
+  poll: 0
+  sudo: true
+  ignore_errors: true
+- name: waiting for server to come back
+  local_action:
+    module: wait_for
+      host={{ inventory_hostname }}
+      port=22
+      state=started
+      delay=30
+      timeout=300
+  sudo: false
 - name: restart the slave
   command: /etc/init.d/smokeping restart
