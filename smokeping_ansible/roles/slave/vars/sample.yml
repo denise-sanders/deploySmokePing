@@ -1,0 +1,4 @@
+SECRET:  
+smokeping_file: /etc/default/smokeping
+SLAVE_NAME: 
+MASTER_URL: 

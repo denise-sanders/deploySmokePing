@@ -16,7 +16,7 @@
 - lineinfile: dest={{smokeping_file}} regexp='MASTER_URL' line='MASTER_URL={{MASTER_URL}}' state=present
 - lineinfile: dest={{smokeping_file}} regexp='SLAVE_NAME' line='SLAVE_NAME={{SLAVE_NAME}}' state=present
 - file: path='/etc/smokeping/slavesecrets.conf' state=touch
-- lineinfile: dest=/etc/smokeping/slavesecrets.conf line="sekritsn3k"
+- lineinfile: dest=/etc/smokeping/slavesecrets.conf line={{SECRET}}
 - file: path='/etc/smokeping/slavesecrets.conf' state=touch mode=0400 owner=smokeping group=root
 - name: restart machine
   shell: sleep 2 && shutdown -r now "Ansible updates triggered"
